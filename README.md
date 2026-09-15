@@ -1,4 +1,4 @@
-# Black Swan AV — Setup Guide
+# Antivirus — Setup Guide
 
 ---
 
@@ -27,7 +27,7 @@ Your final structure will look like:
 ~/blackswan/
 ├── engine.c
 ├── quarantine.c
-├── restore.c
+├── restore2.c
 ├── rtm.c
 ├── gui.py
 ├── exceptions.txt        ← create empty for now
@@ -82,7 +82,7 @@ Change quarantine dir:
 #define QUARANTINE_DIR "/home/YOUR_USERNAME/blackswan/quarantine"
 ```
 
-### restore.c
+### restore2.c
 Change quarantine dir:
 ```c
 #define QUARANTINE_DIR "/home/YOUR_USERNAME/blackswan/quarantine"
@@ -168,7 +168,8 @@ Test RTM:
 
 Test restore:
 ```bash
-./restore eicar.txt Ganesh
+./restore2 eicar.txt
+./restore2 --> GUI Enter Filename --> Enter Master Key --> File Restored
 ```
 
 ---
@@ -178,7 +179,7 @@ Test restore:
 ```bash
 gcc engine.c quarantine.c -o engine -lyara   # if engine.c or quarantine.c changed
 gcc rtm.c -o rtm -lpthread                   # if rtm.c changed
-gcc restore.c -o restore                     # if restore.c changed
+gcc restore2.c -o restore2                   # if restore.c changed
 ```
 
 ---
