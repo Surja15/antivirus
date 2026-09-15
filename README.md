@@ -1,104 +1,195 @@
->> ANALYSIS <<
+# Black Swan AV — Setup Guide
 
-    Purpose: Section header — indicates the start of the core analysis results.
+---
 
-    Relevance: Helps visually separate the analysis report for readability.
+## 1. Install Dependencies
 
---Entropy calculated using Shannon's Information Entropy formula--
+```bash
+sudo apt update
+sudo apt install gcc make python3 python3-pip libyara-dev yara git -y
+pip install pillow
+```
 
-    What it means: The entropy values reported are calculated using Shannon's entropy, a formula from information theory.
+---
 
-    How it's calculated:
+## 2. Project Folder Structure
 
-        Counts frequency of each byte (0–255) in the file or section.
+Create everything in one place:
 
-        For each byte, calculates probability pipi​.
+```bash
+mkdir ~/blackswan
+cd ~/blackswan
+mkdir myrule myrule/compiled quarantine
+```
 
-        Entropy H=−∑pilog⁡2(pi)H=−∑pi​log2​(pi​) — sum of all bytes’ contributions.
+Your final structure will look like:
+```
+~/blackswan/
+├── engine.c
+├── quarantine.c
+├── restore.c
+├── rtm.c
+├── gui.py
+├── exceptions.txt        ← create empty for now
+├── images/               ← your GUI images go here
+├── myrule/
+│   ├── yourule.yar       ← raw rules from github
+│   └── compiled/         ← compiled .yarac files go here
+└── quarantine/           ← auto-created by quarantine.c
+```
 
-    Why relevant: Indicates randomness/unpredictability in the data — helps detect compressed/encrypted or obfuscated content.
+---
 
-Entropy (Shannon): 6.34
+## 3. Get YARA Rules
 
-    What it means: The overall entropy of the entire file's raw bytes is 6.34 on a scale of 0 to 8 bits per byte.
+```bash
+cd ~/blackswan/myrule
+git clone <your-rules-repo-url> .
+```
 
-    Interpretation:
+---
 
-        0 means completely uniform (all bytes the same).
+## 4. Compile YARA Rules
 
-        8 means maximum randomness (each byte equally likely).
+Each `.yar` file needs to be compiled to `.yarac`:
 
-        6.34 is moderately high — suspiciously random, possibly packed or encrypted.
+```bash
+cd ~/blackswan/myrule
+for f in *.yar; do
+    yarac "$f" "compiled/${f%.yar}.yarac"
+done
+```
 
-    Why relevant: Malware often compresses/encrypts itself to evade static detection, increasing entropy.
+Verify:
+```bash
+ls compiled/
+```
+You should see `.yarac` files.
 
-Number of Sections: 4
+---
 
-    What it means: The PE file contains 4 distinct sections (like .text, .data, .rdata, etc.).
+## 5. Fix File Paths in Each Code
 
-    Why relevant: Section count is basic metadata; unusual numbers may indicate packing or tampering.
+### engine.c
+Change rules_dir to your path:
+```c
+const char* rules_dir = "/home/YOUR_USERNAME/blackswan/myrule/compiled/";
+```
 
-Suspicious Sections:
+### quarantine.c
+Change quarantine dir:
+```c
+#define QUARANTINE_DIR "/home/YOUR_USERNAME/blackswan/quarantine"
+```
 
-    What it means: Sections flagged because their entropy is high (>6.8), which could indicate packed or encrypted data.
+### restore.c
+Change quarantine dir:
+```c
+#define QUARANTINE_DIR "/home/YOUR_USERNAME/blackswan/quarantine"
+```
 
-    Why relevant: Packed or encrypted sections often hide malicious code.
+### rtm.c
+Change engine path:
+```c
+execl("/home/YOUR_USERNAME/blackswan/engine",
+      "./engine", data->filePath, (char *)NULL);
+```
 
-- .text: Entropy=7.04
+### gui.py
+Change both paths:
+```python
+ENGINE_PATH     = "/home/YOUR_USERNAME/blackswan/engine"
+ENGINE_RTM_PATH = "/home/YOUR_USERNAME/blackswan/rtm"
+```
 
-    What it means: The .text section (usually contains executable code) has entropy 7.04, which is quite high.
+Replace YOUR_USERNAME with your actual Linux username. Check it with:
+```bash
+whoami
+```
 
-    Interpretation:
+---
 
-        This is unusual — .text is expected to have code with moderate entropy.
+## 6. Create exceptions.txt
 
-        High entropy here can mean the code is packed or encrypted — a red flag.
+```bash
+touch ~/blackswan/exceptions.txt
+```
 
-    Why relevant: Points to potentially obfuscated or malicious code.
+Add any folders to exclude from RTM, one per line:
+```
+/proc
+/sys
+/dev
+```
+Leave empty if you don't need exclusions.
 
-Flagged Suspicious APIs: ['LoadLibraryA', 'GetProcAddress']
+---
 
-    What it means: The file imports these Windows API functions known for dynamic loading or code injection.
+## 7. Compile
 
-    Why relevant:
+```bash
+cd ~/blackswan
 
-        LoadLibraryA loads DLLs at runtime, often abused by malware to inject code.
+# Engine (links quarantine in)
+gcc engine.c quarantine.c -o engine -lyara
 
-        GetProcAddress retrieves function addresses dynamically, common in obfuscated calls.
+# RTM
+gcc rtm.c -o rtm -lpthread
 
-        Their presence increases suspicion about the file’s behavior.
+# Restore utility (standalone)
+gcc restore.c -o restore
+```
 
-Risk Score (0-100): 25
+---
 
-    What it means: A heuristic score summarizing risk, scaled from 0 (low risk) to 100 (high risk).
+## 8. Run
 
-    How calculated:
+```bash
+cd ~/blackswan
+python3 gui.py
+```
 
-        Starts at 0, adds points for:
+---
 
-            Overall entropy > 6.5 → +20 points
+## 9. Quick Test (without GUI)
 
-            Each suspicious section → +5 points
+Test engine on a file directly:
+```bash
+# Download EICAR test file (harmless AV test string)
+echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > eicar.txt
+./engine eicar.txt
+```
 
-            Each flagged API → +10 points
+Test RTM:
+```bash
+./rtm ~/Downloads &
+# Now create/modify a file in Downloads and watch output
+```
 
-        In this case:
+Test restore:
+```bash
+./restore eicar.txt Ganesh
+```
 
-            Entropy (6.34) → close but <6.5 → no points
+---
 
-            1 suspicious section → +5
+## Recompile After Any Code Change
 
-            2 flagged APIs → +20
+```bash
+gcc engine.c quarantine.c -o engine -lyara   # if engine.c or quarantine.c changed
+gcc rtm.c -o rtm -lpthread                   # if rtm.c changed
+gcc restore.c -o restore                     # if restore.c changed
+```
 
-            Total = 25
+---
 
-    Why relevant: Helps prioritize files for deeper inspection or automated blocking.
+## Common Errors
 
-Summary
-Line	Meaning	Importance
-Entropy (Shannon): 6.34	Raw byte randomness measured	Detects packing/encryption
-Number of Sections: 4	Number of PE file sections	Basic structural info
-Suspicious Sections:	Sections with unusually high entropy	Potentially obfuscated code
-.text: Entropy=7.04	High entropy in executable code section	Strong sign of packing or encryption
-Flagged Suspicious APIs	Imports of risky system calls	Indicates possible malicious behavior
-Risk Score (0-100): 25	Heuristic combined risk score	Overall threat likelihood
+| Error | Fix |
+|---|---|
+| `libyara not found` | `sudo apt install libyara-dev` |
+| `FileNotFoundError` in GUI | Wrong path in ENGINE_PATH or ENGINE_RTM_PATH |
+| `multiple definition of main` | quarantine.c still has main() — delete it |
+| `unknown type FILE` in rtm.c | Add `#include <stdio.h>` at top |
+| Rules not matching | Check compiled/ has .yarac files |
+| Permission denied on engine/rtm | `chmod +x engine rtm` |
