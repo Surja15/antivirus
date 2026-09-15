@@ -194,3 +194,10 @@ gcc restore2.c -o restore2                   # if restore.c changed
 | `unknown type FILE` in rtm.c | Add `#include <stdio.h>` at top |
 | Rules not matching | Check compiled/ has .yarac files |
 | Permission denied on engine/rtm | `chmod +x engine rtm` |
+
+## Screenshots
+<img width="1440" height="871" alt="BlackSwanFileUpload" src="https://github.com/user-attachments/assets/e60bfd07-c960-4300-8d94-58bbc69f29c5" />
+<img width="1427" height="862" alt="BlackSwanDirectoryScan" src="https://github.com/user-attachments/assets/a81b49d4-81eb-48a2-85fd-f6dfaae03d1c" />
+<img width="1425" height="872" alt="BlackSwanRTM" src="https://github.com/user-attachments/assets/c623e6ef-c695-47db-b1cf-db0f330ea4e5" />
+<img width="1212" height="878" alt="restore2" src="https://github.com/user-attachments/assets/07a45228-fa1e-4c2a-b326-66c9b9fcb4ff" />
+<img width="428" height="57" alt="BlackSwanRestore2" src="https://github.com/user-attachments/assets/81b88692-01f5-4c6f-b651-cd309bd5f84b" />
