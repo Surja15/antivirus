@@ -1,0 +1,16 @@
+              BLACK SWAN ANTIVIRUS SCAN REPORT              
+------------------------------------------------------------
+Timestamp: 2025-07-26 11:11:41
+Filename : eicar.com
+Location : /home/surja/Downloads/Black-Swan-main/eicar.com
+------------------------------------------------------------
+>> ANALYSIS <<
+--Entropy calculated using Shannon's Information Entropy formula--
+Entropy (Shannon): 4.91
+Not a valid PE executable — skipping further analysis.
+------------------------------------------------------------
+>> FLAGGED RULES <<
+- eicar
+------------------------------------------------------------
+End of Report
+------------------------------------------------------------
